@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GR Management System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        /* Custom font for better aesthetics, similar to Windows 11's Segoe UI */
+        body {
+            font-family: 'Inter', sans-serif; /* Ensure Inter font is used */
+            background-color: #f3f6f9; /* Light background for the overall page */
+        }
+        /* Active navigation button styling */
+        .nav-button.active {
+            background-color: #0078D4; /* Windows 11 accent blue */
+            color: white;
+            font-weight: 600;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.1); /* Subtle inner shadow for active state */
+        }
+        /* Hide sections by default, JavaScript will manage visibility */
+        .view-section {
+            display: none;
+        }
+        .view-section.active {
+            display: block;
+        }
+
+        /* Custom scrollbar for a more modern look */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #e0e0e0;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #a0a0a0;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #808080;
+        }
+
+        /* Modal specific styles */
+        .custom-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .custom-modal-content {
+            background-color: white;
+            padding: 2rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            max-width: 90%;
+            width: 400px;
+            text-align: center;
+        }
+        .custom-modal-buttons button {
+            margin: 0.5rem;
+        }
+
+        /* Specific styles for print */
+        @media print {
+            body {
+                font-size: 10pt; /* Smaller font for print */
+            }
+            .app-container, .app-header, .main-nav, #mainContent, .app-footer, .logout-button, .view-section, .gr-slip-view button {
+                display: none !important; /* Hide everything by default */
+            }
+            #grPrintArea {
+                display: block !important; /* Only show the print area */
+                width: 21cm; /* A4 width */
+                min-height: 29.7cm; /* A4 height */
+                margin: 0 auto;
+                box-shadow: none;
+                border: none;
+                padding: 0;
+                background-color: white;
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+            }
+            /* Ensure GR slip components are visible and laid out for print */
+            .gr-slip-header, .gr-slip-details, .gr-slip-table, .terms, .footer, .company-details, .gr-details-left, .gr-details-right, .table-responsive {
+                display: block !important;
+                position: static !important;
+                width: auto !important;
+                max-width: none !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                box-shadow: none !important;
+                border: none !important;
+                float: none !important; /* Clear any floats */
+            }
+            .gr-slip-table table {
+                width: 100%;
+                border-collapse: collapse;
+            }
+            .gr-slip-table th, .gr-slip-table td {
+                border: 1px solid black;
+                padding: 4px;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center font-sans">
+    <section id="authView" class="view-section active bg-white p-8 rounded-lg shadow-lg max-w-md w-full">
+        <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">Welcome to GR Management</h2>
+
+        <div id="loginSection" class="auth-form-section">
+            <h3 class="text-xl font-semibold text-center mb-4 text-gray-700">Login</h3>
+            <form id="loginForm" class="space-y-4">
+                <div>
+                    <label for="loginEmail" class="block text-sm font-medium text-gray-700">Email Address</label>
+                    <input type="email" id="loginEmail" name="loginEmail" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                </div>
+                <div>
+                    <label for="loginPassword" class="block text-sm font-medium text-gray-700">Password</label>
+                    <input type="password" id="loginPassword" name="loginPassword" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                </div>
+                <div>
+                    <button type="submit" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        Login
+                    </button>
+                </div>
+            </form>
+            <p class="mt-4 text-center text-sm text-gray-600">
+                Don't have an account? <a href="#" id="showRegister" class="font-medium text-blue-600 hover:text-blue-500">Register here</a>
+            </p>
+        </div>
+
+        <div id="registerSection" class="auth-form-section hidden">
+            <h3 class="text-xl font-semibold text-center mb-4 text-gray-700">Register</h3>
+            <form id="registerForm" class="space-y-4">
+                <div>
+                    <label for="registerEmail" class="block text-sm font-medium text-gray-700">Email Address</label>
+                    <input type="email" id="registerEmail" name="registerEmail" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                </div>
+                <div>
+                    <button type="submit" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+                        Register
+                    </button>
+                </div>
+            </form>
+            <p class="mt-4 text-center text-sm text-gray-600">
+                Already have an account? <a href="#" id="showLogin" class="font-medium text-blue-600 hover:text-blue-500">Login here</a>
+            </p>
+        </div>
+    </section>
+
+    <div id="mainContent" class="hidden app-container flex">
+        <nav id="mainNav" class="main-nav w-64 bg-gray-800 text-white p-4 flex flex-col justify-between">
+            <div>
+                <h2 class="text-2xl font-bold mb-6 text-center text-blue-300">GR System</h2>
+                <ul class="space-y-2">
+                    <li><button class="nav-button w-full text-left py-2 px-4 rounded-md hover:bg-gray-700 transition duration-150 ease-in-out active" data-view="dashboardView"><i class="fas fa-tachometer-alt mr-2"></i>Dashboard</button></li>
+                    <li><button class="nav-button w-full text-left py-2 px-4 rounded-md hover:bg-gray-700 transition duration-150 ease-in-out" data-view="grEntryView"><i class="fas fa-plus-circle mr-2"></i>GR Entry</button></li>
+                    <li><button class="nav-button w-full text-left py-2 px-4 rounded-md hover:bg-gray-700 transition duration-150 ease-in-out" data-view="grRecordsView"><i class="fas fa-list-alt mr-2"></i>GR Records</button></li>
+                    <li><button class="nav-button w-full text-left py-2 px-4 rounded-md hover:bg-gray-700 transition duration-150 ease-in-out" data-view="depotView"><i class="fas fa-warehouse mr-2"></i>Depot Master</button></li>
+                    <li><button class="nav-button w-full text-left py-2 px-4 rounded-md hover:bg-gray-700 transition duration-150 ease-in-out" data-view="partyView"><i class="fas fa-users mr-2"></i>Party Master</button></li>
+                    <li><button class="nav-button w-full text-left py-2 px-4 rounded-md hover:bg-gray-700 transition duration-150 ease-in-out" data-view="settingsView"><i class="fas fa-cog mr-2"></i>Settings</button></li>
+                </ul>
+            </div>
+            <button id="logoutButton" class="w-full text-left py-2 px-4 rounded-md bg-red-600 hover:bg-red-700 transition duration-150 ease-in-out">
+                <i class="fas fa-sign-out-alt mr-2"></i>Logout
+            </button>
+        </nav>
+
+        <main class="flex-1 p-6 bg-gray-50 overflow-auto">
+            <section id="dashboardView" class="view-section active">
+                <h2 class="text-3xl font-bold text-gray-800 mb-6">Dashboard</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
+                    <div class="bg-blue-100 p-4 rounded-lg shadow-md flex items-center">
+                        <i class="fas fa-box text-blue-600 text-3xl mr-4"></i>
+                        <div>
+                            <p class="text-sm text-gray-600">Total GRs</p>
+                            <p id="totalGrCount" class="text-xl font-bold text-gray-800">0</p>
+                        </div>
+                    </div>
+                    <div class="bg-green-100 p-4 rounded-lg shadow-md flex items-center">
+                        <i class="fas fa-chart-line text-green-600 text-3xl mr-4"></i>
+                        <div>
+                            <p class="text-sm text-gray-600">This Month's GRs</p>
+                            <p id="monthlyGrCount" class="text-xl font-bold text-gray-800">0</p>
+                        </div>
+                    </div>
+                    <div class="bg-yellow-100 p-4 rounded-lg shadow-md flex items-center">
+                        <i class="fas fa-users text-yellow-600 text-3xl mr-4"></i>
+                        <div>
+                            <p class="text-sm text-gray-600">Total Parties</p>
+                            <p id="totalPartyCount" class="text-xl font-bold text-gray-800">0</p>
+                        </div>
+                    </div>
+                    <div class="bg-purple-100 p-4 rounded-lg shadow-md flex items-center">
+                        <i class="fas fa-warehouse text-purple-600 text-3xl mr-4"></i>
+                        <div>
+                            <p class="text-sm text-gray-600">Total Depots</p>
+                            <p id="totalDepotCount" class="text-xl font-bold text-gray-800">0</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4">Recent GR Entries</h3>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full bg-white">
+                            <thead>
+                                <tr class="bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                    <th class="py-3 px-4 rounded-tl-lg">GR No.</th>
+                                    <th class="py-3 px-4">Date</th>
+                                    <th class="py-3 px-4">Consignee</th>
+                                    <th class="py-3 px-4">Destination</th>
+                                    <th class="py-3 px-4 rounded-tr-lg">Depot</th>
+                                </tr>
+                            </thead>
+                            <tbody id="dashboardRecentGrList" class="divide-y divide-gray-200">
+                                <tr><td colspan="5" class="text-center py-4 text-gray-500">No recent GRs to display.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <section id="grEntryView" class="view-section">
+                <h2 class="text-3xl font-bold text-gray-800 mb-6">GR Entry</h2>
+                <form id="grEntryForm" class="bg-white p-6 rounded-lg shadow-md space-y-4">
+                    <input type="hidden" id="grEntryId">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="grDate" class="block text-sm font-medium text-gray-700">Date</label>
+                            <input type="date" id="grDate" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                        </div>
+                        <div>
+                            <label for="depotSelect" class="block text-sm font-medium text-gray-700">Depot</label>
+                            <select id="depotSelect" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"></select>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="grNo" class="block text-sm font-medium text-gray-700">GR No.</label>
+                            <input type="text" id="grNo" readonly class="mt-1 block w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-md shadow-sm sm:text-sm">
+                        </div>
+                        <div>
+                            <label for="grInvoiceNo" class="block text-sm font-medium text-gray-700">Invoice No.</label>
+                            <input type="text" id="grInvoiceNo" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label for="consigneeName" class="block text-sm font-medium text-gray-700">Consignee Name</label>
+                        <input type="text" id="consigneeName" list="partiesDatalist" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                        <datalist id="partiesDatalist"></datalist>
+                    </div>
+                    <div>
+                        <label for="consigneeAddress" class="block text-sm font-medium text-gray-700">Consignee Address</label>
+                        <textarea id="consigneeAddress" rows="2" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"></textarea>
+                    </div>
+                    <div>
+                        <label for="destination" class="block text-sm font-medium text-gray-700">Destination</label>
+                        <input type="text" id="destination" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="grQty" class="block text-sm font-medium text-gray-700">Qty</label>
+                            <input type="number" id="grQty" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                        </div>
+                        <div>
+                            <label for="grWeight" class="block text-sm font-medium text-gray-700">Weight</label>
+                            <input type="text" id="grWeight" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                        </div>
+                    </div>
+                    <div>
+                        <label for="grRemarks" class="block text-sm font-medium text-gray-700">Remarks</label>
+                        <textarea id="grRemarks" rows="2" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"></textarea>
+                    </div>
+
+                    <div class="flex justify-end space-x-2">
+                        <button type="button" id="clearGrFormButton" class="bg-gray-300 text-gray-800 py-2 px-4 rounded-md hover:bg-gray-400">Clear</button>
+                        <button type="submit" id="saveGrButton" class="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700">Save GR</button>
+                    </div>
+                </form>
+            </section>
+
+            <section id="grRecordsView" class="view-section">
+                <h2 class="text-3xl font-bold text-gray-800 mb-6">GR Records</h2>
+                <div class="flex flex-wrap items-center gap-4 mb-6">
+                    <div class="flex-grow">
+                        <label for="grRecordsSearch" class="sr-only">Search GRs</label>
+                        <input type="text" id="grRecordsSearch" placeholder="Search by GR No., Consignee, Destination..." class="block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label for="grRecordsDepotFilter" class="sr-only">Filter by Depot</label>
+                        <select id="grRecordsDepotFilter" class="block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"></select>
+                    </div>
+                    <div>
+                        <label for="grRecordsDateFilter" class="sr-only">Filter by Date</label>
+                        <input type="month" id="grRecordsDateFilter" class="block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <button id="clearGrFiltersButton" class="bg-gray-300 text-gray-800 py-2 px-4 rounded-md hover:bg-gray-400">Clear Filters</button>
+                    <button id="exportExcelButton" class="bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700">Export to Excel</button>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full bg-white">
+                            <thead>
+                                <tr class="bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                    <th class="py-3 px-4">GR No.</th>
+                                    <th class="py-3 px-4">Date</th>
+                                    <th class="py-3 px-4">Depot</th>
+                                    <th class="py-3 px-4">Consignee</th>
+                                    <th class="py-3 px-4">Destination</th>
+                                    <th class="py-3 px-4">Qty</th>
+                                    <th class="py-3 px-4">Weight</th>
+                                    <th class="py-3 px-4">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="grRecordsTableBody" class="divide-y divide-gray-200">
+                                <tr><td colspan="8" class="text-center py-4 text-gray-500">No GR records to display.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <section id="depotView" class="view-section">
+                <h2 class="text-3xl font-bold text-gray-800 mb-6">Depot Master</h2>
+                <form id="depotForm" class="bg-white p-6 rounded-lg shadow-md space-y-4 mb-6">
+                    <input type="hidden" id="depotId">
+                    <div>
+                        <label for="depotName" class="block text-sm font-medium text-gray-700">Depot Name</label>
+                        <input type="text" id="depotName" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                    </div>
+                    <div>
+                        <label for="depotAddress" class="block text-sm font-medium text-gray-700">Address</label>
+                        <textarea id="depotAddress" rows="2" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"></textarea>
+                    </div>
+                    <div>
+                        <label for="depotGST" class="block text-sm font-medium text-gray-700">GST No.</label>
+                        <input type="text" id="depotGST" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                    </div>
+                    <div class="flex justify-end space-x-2">
+                        <button type="button" id="clearDepotFormButton" class="bg-gray-300 text-gray-800 py-2 px-4 rounded-md hover:bg-gray-400">Clear</button>
+                        <button type="submit" id="saveDepotButton" class="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700">Save Depot</button>
+                    </div>
+                </form>
+
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4">Existing Depots</h3>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full bg-white">
+                            <thead>
+                                <tr class="bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                    <th class="py-3 px-4">Name</th>
+                                    <th class="py-3 px-4">Address</th>
+                                    <th class="py-3 px-4">GST No.</th>
+                                    <th class="py-3 px-4">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="depotsTableBody" class="divide-y divide-gray-200">
+                                <tr><td colspan="4" class="text-center py-4 text-gray-500">No depots to display.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <section id="partyView" class="view-section">
+                <h2 class="text-3xl font-bold text-gray-800 mb-6">Party Master</h2>
+                <form id="partyForm" class="bg-white p-6 rounded-lg shadow-md space-y-4 mb-6">
+                    <input type="hidden" id="partyId">
+                    <div>
+                        <label for="partyName" class="block text-sm font-medium text-gray-700">Party Name</label>
+                        <input type="text" id="partyName" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                    </div>
+                    <div>
+                        <label for="partyAddress" class="block text-sm font-medium text-gray-700">Address</label>
+                        <textarea id="partyAddress" rows="2" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"></textarea>
+                    </div>
+                    <div>
+                        <label for="partyGST" class="block text-sm font-medium text-gray-700">GST No.</label>
+                        <input type="text" id="partyGST" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                    </div>
+                    <div class="flex justify-end space-x-2">
+                        <button type="button" id="clearPartyFormButton" class="bg-gray-300 text-gray-800 py-2 px-4 rounded-md hover:bg-gray-400">Clear</button>
+                        <button type="submit" id="savePartyButton" class="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700">Save Party</button>
+                    </div>
+                </form>
+
+                <div class="bg-white p-6 rounded-lg shadow-md mb-6">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4">Bulk Add Parties (CSV format: Name, Address, GST No.)</h3>
+                    <textarea id="bulkPartyData" rows="5" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" placeholder="e.g., Party A, Address A, GSTA&#10;Party B, Address B, GSTB"></textarea>
+                    <div class="flex justify-end mt-4">
+                        <button type="button" id="bulkAddPartiesButton" class="bg-purple-600 text-white py-2 px-4 rounded-md hover:bg-purple-700">Bulk Add</button>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4">Existing Parties</h3>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full bg-white">
+                            <thead>
+                                <tr class="bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                    <th class="py-3 px-4">Name</th>
+                                    <th class="py-3 px-4">Address</th>
+                                    <th class="py-3 px-4">GST No.</th>
+                                    <th class="py-3 px-4">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="partiesTableBody" class="divide-y divide-gray-200">
+                                <tr><td colspan="4" class="text-center py-4 text-gray-500">No parties to display.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <section id="settingsView" class="view-section">
+                <h2 class="text-3xl font-bold text-gray-800 mb-6">Settings</h2>
+
+                <div class="bg-white p-6 rounded-lg shadow-md mb-6">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4">Change Password</h3>
+                    <p class="text-sm text-gray-600 mb-4">
+                        **Note:** Since you're using email link authentication, if you wish to set a password after your initial sign-in, or change an existing password, you'll need to re-authenticate with your current method (e.g., by clicking another email link or if you previously set a password, using that). If you set a password here, you will then be able to log in with email and password.
+                    </p>
+                    <form id="changePasswordForm" class="space-y-4">
+                        <div>
+                            <label for="currentPassword" class="block text-sm font-medium text-gray-700">Current Password</label>
+                            <input type="password" id="currentPassword" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                        </div>
+                        <div>
+                            <label for="newPassword" class="block text-sm font-medium text-gray-700">New Password</label>
+                            <input type="password" id="newPassword" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                        </div>
+                        <div>
+                            <label for="confirmNewPassword" class="block text-sm font-medium text-gray-700">Confirm New Password</label>
+                            <input type="password" id="confirmNewPassword" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                        </div>
+                        <div class="flex justify-end">
+                            <button type="submit" class="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700">Change Password</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4">Depot Security Settings</h3>
+                    <p class="text-sm text-gray-600 mb-4">
+                        Set a password for individual depots to restrict access to their GR data. Users will be prompted for this password when selecting a filtered depot.
+                    </p>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full bg-white">
+                            <thead>
+                                <tr class="bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                    <th class="py-3 px-4">Depot Name</th>
+                                    <th class="py-3 px-4">Password Status</th>
+                                    <th class="py-3 px-4">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="settingsDepotList" class="divide-y divide-gray-200">
+                                <tr><td colspan="3" class="text-center py-4 text-gray-500">No depots to display.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+             <section id="grPrintView" class="view-section">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-3xl font-bold text-gray-800">GR Slip Preview</h2>
+                    <button id="printGrButton" class="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700">Print GR</button>
+                </div>
+                <div id="grPrintArea" class="bg-white p-8 rounded-lg shadow-md max-w-2xl mx-auto border border-gray-300">
+                    <div class="gr-slip-header text-center mb-6 border-b pb-4">
+                        <h1 class="text-3xl font-bold mb-1">GANESH ROAD CARRIER</h1>
+                        <p class="text-sm">Regd. Office: SCO 16, New Grain Market, Near Old Bus Stand, Dhuri, Distt. Sangrur, Punjab</p>
+                        <p class="text-sm">Contact: +91 9876543210</p>
+                        <p class="text-sm">GSTIN: 03ABCDE1234F1Z5</p>
+                    </div>
+
+                    <div class="gr-slip-details grid grid-cols-2 gap-4 mb-6">
+                        <div class="gr-details-left">
+                            <p><strong>GR No:</strong> <span id="printGrNo"></span></p>
+                            <p><strong>Date:</strong> <span id="printGrDate"></span></p>
+                            <p><strong>Depot:</strong> <span id="printDepotName"></span></p>
+                        </div>
+                        <div class="gr-details-right text-right">
+                            <p><strong>Consignee:</strong> <span id="printConsigneeName"></span></p>
+                            <p class="text-sm" id="printConsigneeAddress"></p>
+                            <p><strong>Destination:</strong> <span id="printDestination"></span></p>
+                            <p><strong>Invoice No:</strong> <span id="printGrInvoiceNo"></span></p>
+                        </div>
+                    </div>
+
+                    <div class="gr-slip-table mb-6 overflow-x-auto">
+                        <table class="min-w-full table-auto border border-gray-400">
+                            <thead>
+                                <tr class="bg-gray-100 text-left">
+                                    <th class="py-2 px-3 border-b border-gray-400">Description</th>
+                                    <th class="py-2 px-3 border-b border-gray-400">Qty</th>
+                                    <th class="py-2 px-3 border-b border-gray-400">Weight</th>
+                                    <th class="py-2 px-3 border-b border-gray-400">Remarks</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td class="py-2 px-3 border-b border-gray-400">Goods as per invoice</td>
+                                    <td class="py-2 px-3 border-b border-gray-400" id="printGrQty"></td>
+                                    <td class="py-2 px-3 border-b border-gray-400" id="printGrWeight"></td>
+                                    <td class="py-2 px-3 border-b border-gray-400" id="printGrRemarks"></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="terms mb-6 text-xs text-gray-700">
+                        <strong>Terms & Conditions:</strong><br>
+                        Goods to be delivered in original condition. Carrier not responsible for delay due to unforeseen circumstances. Claims, if any, should be made within 7 days.<br>
+                        E. & O.E.
+                    </div>
+
+                    <div class="footer text-right text-sm">
+                        Signature: ______________________
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <div id="customModal" class="custom-modal hidden">
+        <div class="custom-modal-content">
+            <h3 id="modalTitle" class="text-xl font-bold mb-4"></h3>
+            <p id="modalMessage" class="text-gray-700 mb-6"></p>
+            <input type="password" id="modalInput" class="hidden mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" placeholder="Enter password">
+            <div id="modalButtons" class="custom-modal-buttons flex justify-center">
+                </div>
+        </div>
+    </div>
+
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/js/all.min.js"></script>
+    
+    <script type="module" src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
+    <script type="module" src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js"></script>
+    <script type="module" src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js"></script>
+
+    <script type="module" src="js/firebase-config.js"></script>
+    <script type="module" src="js/auth.js"></script>
+    <script type="module" src="js/depot.js"></script>
+    <script type="module" src="js/party.js"></script>
+    <script type="module" src="js/gr.js"></script>
+    <script type="module" src="js/settings.js"></script>
+    <script type="module" src="js/main.js"></script>
+</body>
+</html>
